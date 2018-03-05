@@ -72,6 +72,15 @@ class Door(EasterObj):
         return
 
 
+class Game_Manager():
+    def __init__(self, level, turn):
+        self.level = level
+        self.turn = turn
+
+    def display_game_info(self, numMonsters):
+        print("Level = {}\nTurn = {}\nNumber of Monsters = {}".format(self.level, self.turn, numMonsters))
+
+
 class Grid():
     def __init__(self, rows, cols):
         self.rows = rows
@@ -95,49 +104,62 @@ class Grid():
         for row in range(self.rows):
             print("------" * self.rows)
             for col in range(self.cols):
-                if player.coord == [row, col] and col == self.cols - 1:
+                flag = False
+                # Create monsters on grid with for loop
+                for monster_coord in monster_coords:
+                    if monster_coord == [row, col] and col == self.cols - 1 and flag == False:
+                        print("|  m  |")
+                        flag = True
+                    elif monster_coord == [row, col] and flag == False:
+                        flag = True
+                        print("|  m  ", end="")
+                if player.coord == [row, col] and col == self.cols - 1 and flag == False:
                     print("|  p  |")
-                elif player.coord == [row, col]:
+                elif player.coord == [row, col] and flag == False:
                     print("|  p  ", end="")
-                elif monster.coord == [row, col] and col == self.cols - 1:
-                    print("|  m  |")
-                elif monster.coord == [row, col]:
-                    print("|  m  ", end="")
-                elif basket.coord == [row, col] and col == self.cols - 1:
+                elif basket.coord == [row, col] and col == self.cols - 1 and flag == False:
                     print("|  b  |")
-                elif basket.coord == [row, col]:
+                elif basket.coord == [row, col] and flag == False:
                     print("|  b  ", end="")
-                elif egg1.coord == [row, col] and col == self.cols - 1:
+                elif egg1.coord == [row, col] and col == self.cols - 1 and flag == False:
                     print("|  e  |")
-                elif egg1.coord == [row, col]:
+                elif egg1.coord == [row, col] and flag == False:
                     print("|  e  ", end="")
-                elif egg2.coord == [row, col] and col == self.cols - 1:
+                elif egg2.coord == [row, col] and col == self.cols - 1 and flag == False:
                     print("|  e  |")
-                elif egg2.coord == [row, col]:
+                elif egg2.coord == [row, col] and flag == False:
                     print("|  e  ", end="")
-                elif egg3.coord == [row, col] and col == self.cols - 1:
+                elif egg3.coord == [row, col] and col == self.cols - 1 and flag == False:
                     print("|  e  |")
-                elif egg3.coord == [row, col]:
+                elif egg3.coord == [row, col] and flag == False:
                     print("|  e  ", end="")
-                elif door.coord == [row, col] and col == self.cols - 1:
+                elif door.coord == [row, col] and col == self.cols - 1 and flag == False:
                     print("|  d  |")
-                elif door.coord == [row, col]:
+                elif door.coord == [row, col] and flag == False:
                     print("|  d  ", end="")
-                elif col == self.cols - 1:
+                elif col == self.cols - 1 and flag == False:
                     print("|     |")
-                else:
+                elif flag == False:
                     print("|     ", end="")
             if row == self.rows - 1:
                 print("------" * self.rows)
 
     def checkGameOver(self, *args):
-        if player.coord == monster.coord:
-            clear_output()
-            print("You ran into the monster! Sorry, but you lose. Better luck next time....")
-            self.game_over = True
-        elif player.coord == door.coord and basket.acquired and egg1.acquired and egg2.acquired and egg3.acquired:
+        for monster_coord in monster_coords:
+            if player.coord == monster_coord:
+                clear_output()
+                print("Monster that killed you was at {}, and you were at {}".format(monster_coord, player.coord))
+                print("You ran into the monster! Sorry, but you lose. Better luck next time....")
+                print("You managed to make it to level {} before dying. ".format(game_manager.level) +
+                      "You faced a max of {} monster(s).".format(len(monster_coords)))
+                game_manager.level = 1
+                game_manager.turn = 0
+                self.game_over = True
+        if player.coord == door.coord and basket.acquired and egg1.acquired and egg2.acquired and egg3.acquired:
             clear_output()
             print("Congratulations!! You beat the game!")
+            game_manager.level += 1
+            game_manager.turn = 0
             self.game_over = True
         return self.game_over
 
@@ -173,6 +195,8 @@ def print_instructions():
 
 # Main loop flag
 stop = False
+# Game manager object, put main loop flag in later
+game_manager = Game_Manager(1, 0)
 
 # Main loop
 while stop == False:
@@ -182,46 +206,41 @@ while stop == False:
     grid = Grid(rows, cols)
     grid.initCoords()
 
+    # Initialize levels and empty monster list
+    monsters = []
+
     # Get random coords for objects
-    random_coords = grid.getRandomCoords(7)
+    random_coords = grid.getRandomCoords(6 + game_manager.level)
 
     # Create instances of objects
     player = Person(random_coords[0], 'Player', None)
-    monster = Monster(random_coords[1], 'Monster', None)
-    basket = Basket(random_coords[2], 'Basket', False)
+    basket = Basket(random_coords[1], 'Basket', False)
+    door = Door(random_coords[2], 'Door', None)
     egg1 = Egg(random_coords[3], 'Egg 1', False)
     egg2 = Egg(random_coords[4], 'Egg 2', False)
     egg3 = Egg(random_coords[5], 'Egg 3', False)
-    door = Door(random_coords[6], 'Door', None)
+    #monster = Monster(random_coords[6], 'Tiger', None)
 
+    # Create Monster instances based on list
+    for i in range(game_manager.level):
+        monsters.append(Monster(random_coords[i + 6], 'Monster', None))
+
+    # Create variable for monster coords
+    monster_coords = []
+
+    for monster in monsters:
+        monster_coords.append(monster.coord)
 
     # Initialize value for basket
     has_basket = False
 
     # Start main game loop
     while True:
+        game_over = False
+        game_manager.turn += 1
         clear_output()
         print_instructions()
-        basket.Acquired()
-        egg1.Acquired()
-        egg2.Acquired()
-        egg3.Acquired()
-        monster.changePosition(rows, cols)
-        grid.drawGrid(player.coord, monster.coord, basket.coord, egg1.coord, egg2.coord, egg3.coord, door.coord)
-
-        ans = input("What would you like to do? ")
-        ans = ans.lower()
-
-        if ans == 'q':
-            clear_output()
-            play_again = input("Would you like to play again? ")
-            if play_again.lower() == 'yes':
-                break
-            else:
-                stop = True
-                break
-        else:
-            player.move_object(ans, rows, cols)
+        game_manager.display_game_info(len(monster_coords))
 
         # Check if player hits basket
         if has_basket == False:
@@ -231,12 +250,47 @@ while stop == False:
         if has_basket == True:
             grid.checkEggAcquired(player.coord, egg1.coord, egg2.coord, egg3.coord)
 
-        # Check if player hits monster
-        game_over = grid.checkGameOver(player.coord, monster.coord, door.coord, egg1, egg2, egg3, basket)
+        # Print acquired correctly
+        basket.Acquired()
+        egg1.Acquired()
+        egg2.Acquired()
+        egg3.Acquired()
+
+        # Check if player hits monster before everything else
+        if game_manager.turn > 2:
+            game_over = grid.checkGameOver(player.coord, monster_coords, door.coord, egg1, egg2, egg3, basket, game_manager)
+
+        if game_over == False:
+            # Change all monsters positions
+            for monster in monsters:
+                monster.changePosition(rows, cols)
+
+            grid.drawGrid(player.coord, monster_coords, basket.coord, egg1.coord, egg2.coord, egg3.coord, door.coord)
+
+            # Check if player hits monster before everything else
+            if game_manager.turn > 1:
+                game_over = grid.checkGameOver(player.coord, monster_coords,
+                                               door.coord, egg1, egg2, egg3, basket, game_manager)
+
         if game_over == True:
             play_again = input("Would you like to play again? ")
             if play_again.lower() == 'yes':
+                game_manager.turn = 0
                 break
             else:
                 stop = True
                 break
+        else:
+            ans = input("What would you like to do? ")
+            ans = ans.lower()
+
+        if ans == 'q':
+            play_again = input("Would you like to play again? ")
+            if play_again.lower() == 'yes':
+                game_manager.turn = 0
+                break
+            else:
+                stop = True
+                break
+        else:
+            player.move_object(ans, rows, cols)
